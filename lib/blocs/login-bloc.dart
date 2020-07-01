@@ -1,8 +1,9 @@
 import 'dart:async';
 
-import 'package:flutterapp/events/auth-event.dart';
-import 'package:flutterapp/events/login-event.dart';
-import 'package:flutterapp/states/login-state.dart';
+import 'package:aldeia_montessori/events/auth-event.dart';
+import 'package:aldeia_montessori/events/login-event.dart';
+import 'package:aldeia_montessori/models/user.dart';
+import 'package:aldeia_montessori/states/login-state.dart';
 import 'package:meta/meta.dart';
 import 'package:bloc/bloc.dart';
 import '../services/auth-service.dart';
@@ -30,12 +31,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       yield LoginLoading();
 
       try {
-        final String token = await authService.authenticate(
-          username: event.username,
+        final User user = await authService.authenticate(
+          email: event.username,
           password: event.password,
         );
 
-        authenticationBloc.add(LoggedIn(token: token));
+        authenticationBloc.add(LoggedIn(user: user));
         yield LoginInitial();
       } catch (error) {
         yield LoginFailure(error: error.toString());

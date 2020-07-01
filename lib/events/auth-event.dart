@@ -1,3 +1,4 @@
+import 'package:aldeia_montessori/models/user.dart';
 import 'package:meta/meta.dart';
 import 'package:equatable/equatable.dart';
 
@@ -11,15 +12,15 @@ abstract class AuthenticationEvent extends Equatable {
 class AppStarted extends AuthenticationEvent {}
 
 class LoggedIn extends AuthenticationEvent {
-  const LoggedIn({@required this.token});
+  const LoggedIn({@required this.user});
 
-  final String token;
-
-  @override
-  List<Object> get props => <Object>[token];
+  final User user;
 
   @override
-  String toString() => 'LoggedIn { token: $token }';
+  List<Object> get props => <Object>[user];
+
+  @override
+  String toString() => 'LoggedIn { token: ${user.token} }';
 }
 
 class LoggedOut extends AuthenticationEvent {}

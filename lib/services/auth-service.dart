@@ -1,45 +1,50 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:aldeia_montessori/models/user.dart';
+import 'package:aldeia_montessori/services/storage-service.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:meta/meta.dart';
+import './api-service.dart';
 
+/// A service for authenticating users.
+///
+///
 class AuthService {
-  Future<String> authenticate({
-    @required String username,
+  factory AuthService() {
+    return _instance;
+  }
+
+  AuthService._internal();
+
+  static final AuthService _instance = AuthService._internal();
+
+  FlutterSecureStorage get storage => const FlutterSecureStorage();
+  ApiService get apiService => ApiService();
+  StorageService get storageService => StorageService();
+
+  /// Authenticates User
+  ///
+  /// Sends the [username] and [password] credentials, then saves the
+  /// Token into storage. It returns a boolean because the Login Page
+  /// needs to confirm that the token was properly saved into storage.
+  Future<User> authenticate({
+    @required String email,
     @required String password,
   }) async {
-    final http.Response response = await http.post(
-      'http://a23b60d0.ngrok.io/api-token-auth/',
-      headers: <String, String>{HttpHeaders.contentTypeHeader: 'application/json'},
-      body: jsonEncode(<String, String>{
-        'username': username,
-        'password': password
-      })
-    );
-
-    if (response.statusCode == 200) {
-      return json.decode(response.body)['token'] as String;
-    } else {
-      // If the server did not return a 201 CREATED response,
-      // then throw an exception.
-      throw Exception('Failed to authenticate');
-    }
+    final dynamic response = await apiService.post(
+        url: 'api/token',
+        data: <String, String>{'username': email, 'password': password});
+    final Map<String, dynamic> userJson = <String, dynamic>{
+      'token': response['credentials']['token'],
+      'id': response['credentials']['id'].toString(),
+      'role': response['credentials']['role'],
+      'name': response['credentials']['name']
+    };
+    final User user = User.fromJson(userJson);
+    await storageService.saveUserData(user);
+    return user;
   }
 
-  Future<void> saveToken(String token) async {
-    const FlutterSecureStorage storage = FlutterSecureStorage();
-    await storage.write(key: 'auth_token', value: token);
-  }
+  Future<void> logout() async => storageService.deleteUserData();
 
-  Future<void> deleteToken() async {
-    const FlutterSecureStorage storage = FlutterSecureStorage();
-    await storage.delete(key: 'auth_token');
-  }
-
-  Future<bool> isAuthenticated() async {
-    const FlutterSecureStorage storage = FlutterSecureStorage();
-    final String token = await storage.read(key: 'auth_token');
-    return token != null;
-  }
+  /// Checks if the User is authenticated, e.g, if the storage has a Token.
+  Future<bool> isAuthenticated() async => await storageService.getToken() != null;
 }
